@@ -73,6 +73,26 @@ const server = createServer((req, res) => {
   }
 
   const fullPath = join(DIST_DIR, filePath);
+  
+  // Если файл не существует, отдай index.html (для SPA роутинга)
+  if (!existsSync(fullPath) || !statSync(fullPath).isFile()) {
+    // Проверяем, не запрашивается ли статический файл (CSS, JS, изображения)
+    const ext = extname(filePath).toLowerCase();
+    const isStaticFile = ext && (ext === '.css' || ext === '.js' || ext === '.png' || ext === '.jpg' || ext === '.jpeg' || ext === '.gif' || ext === '.svg' || ext === '.ico' || ext === '.woff' || ext === '.woff2' || ext === '.ttf' || ext === '.eot' || ext === '.json');
+    
+    if (isStaticFile) {
+      // Если это статический файл, но его нет - верни 404
+      res.writeHead(404, { 'Content-Type': 'text/plain' });
+      res.end('404 Not Found');
+      return;
+    }
+    
+    // Для всех остальных путей отдай index.html (SPA роутинг)
+    const indexPath = join(DIST_DIR, 'index.html');
+    serveFile(indexPath, res);
+    return;
+  }
+
   serveFile(fullPath, res);
 });
 
